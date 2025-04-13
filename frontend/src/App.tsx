@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Link, useNavigate, useLocation, Routes, Route } from 'react-router-dom'
 import FilamentList from './components/FilamentList'
 import FilamentForm from './components/FilamentForm'
 import PrintQueue from './components/PrintQueue'
@@ -15,6 +15,7 @@ import { Part } from './types/part'
 import { Product, ProductFormData, ProductWithCalculations } from './types/product'
 import { API_URL } from './config'
 import PartForm from './components/PartForm'
+import Settings from './components/Settings'
 
 function App() {
   const [filaments, setFilaments] = useState<Filament[]>([])
@@ -28,7 +29,7 @@ function App() {
   const [isAddingFilament, setIsAddingFilament] = useState(false)
   const [isAddingPart, setIsAddingPart] = useState(false)
   const [isAddingProduct, setIsAddingProduct] = useState(false)
-  const [activeView, setActiveView] = useState<'filaments' | 'parts' | 'printers' | 'products'>('filaments')
+  const [activeView, setActiveView] = useState<'filaments' | 'parts' | 'printers' | 'products' | 'settings'>('filaments')
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   
   const navigate = useNavigate()
@@ -73,14 +74,15 @@ function App() {
   // Set active view based on URL path
   useEffect(() => {
     const path = location.pathname.slice(1) || 'filaments'
-    if (['filaments', 'parts', 'printers', 'products'].includes(path)) {
-      setActiveView(path as 'filaments' | 'parts' | 'printers' | 'products')
+    if (['filaments', 'parts', 'printers', 'products', 'settings'].includes(path)) {
+      setActiveView(path as 'filaments' | 'parts' | 'printers' | 'products' | 'settings')
       
       // Refetch data when route changes to ensure content updates
       if (path === 'filaments') fetchFilaments();
       if (path === 'parts') fetchParts();
       if (path === 'printers') fetchPrinters();
       if (path === 'products') fetchProducts();
+      if (path === 'settings') fetchSettings();
     } else {
       navigate('/filaments')
     }
@@ -639,6 +641,106 @@ function App() {
     )
   }
 
+  // Handle rendering the appropriate view component
+  const renderActiveView = () => {
+    switch (activeView) {
+      case 'filaments':
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            <div className="lg:col-span-3">
+              <FilamentList
+                filaments={filaments}
+                onUpdate={handleUpdateFilament}
+                onDelete={handleDeleteFilament}
+              />
+            </div>
+            <div>
+              <PrintQueue
+                items={queueItems}
+                printers={printers}
+                onAdd={handleAddQueueItem}
+                onUpdate={handleUpdateQueueItem}
+                onDelete={handleDeleteQueueItem}
+                onReorder={handleReorderQueueItems}
+              />
+              <div className="mt-4">
+                <PurchaseList
+                  items={purchaseItems}
+                  filaments={filaments}
+                  onAdd={handleAddPurchaseItem}
+                  onUpdate={handleUpdatePurchaseItem}
+                  onDelete={handleDeletePurchaseItem}
+                />
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 'parts':
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            <div className="lg:col-span-3">
+              <PartList
+                parts={parts}
+                printers={printers.filter(p => p.id !== undefined) as { id: number; name: string }[]}
+                onUpdatePart={handleUpdatePart}
+                onDeletePart={handleDeletePart}
+              />
+            </div>
+          </div>
+        );
+      
+      case 'printers':
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            <div className="lg:col-span-3">
+              <PrinterList
+                printers={printers}
+                onUpdate={handleUpdatePrinter}
+                onDelete={handleDeletePrinter}
+                onAdd={handleAddPrinter}
+              />
+            </div>
+          </div>
+        );
+      
+      case 'products':
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            <div className="lg:col-span-4">
+              <div className="flex flex-col space-y-4">
+                <ProductList
+                  products={products}
+                  onUpdate={handleUpdateProduct}
+                  onDelete={handleDeleteProduct}
+                  hourlyRate={settings.hourly_rate}
+                  wearTearPercentage={settings.wear_tear_markup}
+                  platformFees={settings.platform_fees}
+                  filamentSpoolPrice={settings.filament_spool_price}
+                  desiredProfitMargin={settings.desired_profit_margin}
+                  packagingCost={settings.packaging_cost}
+                  onUpdateSettings={updateSettings}
+                />
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 'settings':
+        return (
+          <div className="border-2 border-black">
+            <Settings 
+              settings={settings} 
+              onUpdateSettings={updateSettings} 
+            />
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white sm:p-8 font-mono">
       <div className="w-full">
@@ -679,11 +781,18 @@ function App() {
                 >
                   PRODUCTS
                 </Link>
+                <Link
+                  to="/settings"
+                  onClick={() => setActiveView('settings')}
+                  className={`w-auto px-4 py-2 border border-black rounded-none text-xs font-bold text-white ${activeView === 'settings' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} focus:outline-none focus:ring-1 focus:ring-black transition-colors uppercase tracking-wider`}
+                >
+                  SETTINGS
+                </Link>
               </div>
             </div>
             <div className="w-1/4 flex justify-end">
               <div className="flex space-x-2">
-                {activeView !== 'printers' && (
+                {activeView !== 'printers' && activeView !== 'settings' && (
                   <button
                     onClick={() => {
                       if (activeView === 'parts') setIsAddingPart(true)
@@ -753,72 +862,8 @@ function App() {
             />
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-            <div className={`${activeView === 'products' ? 'lg:col-span-4' : 'lg:col-span-3'}`}>
-              {activeView === 'parts' && (
-                <PartList
-                  parts={parts}
-                  printers={printers.filter(p => p.id !== undefined) as { id: number; name: string }[]}
-                  onUpdatePart={handleUpdatePart}
-                  onDeletePart={handleDeletePart}
-                />
-              )}
-              {activeView === 'filaments' && (
-                <FilamentList
-                  filaments={filaments}
-                  onUpdate={handleUpdateFilament}
-                  onDelete={handleDeleteFilament}
-                />
-              )}
-              {activeView === 'printers' && (
-                <PrinterList
-                  printers={printers}
-                  onUpdate={handleUpdatePrinter}
-                  onDelete={handleDeletePrinter}
-                  onAdd={handleAddPrinter}
-                />
-              )}
-              {activeView === 'products' && (
-                <div className="flex flex-col space-y-4">
-                  <ProductList
-                    products={products}
-                    onUpdate={handleUpdateProduct}
-                    onDelete={handleDeleteProduct}
-                    hourlyRate={settings.hourly_rate}
-                    wearTearPercentage={settings.wear_tear_markup}
-                    platformFees={settings.platform_fees}
-                    filamentSpoolPrice={settings.filament_spool_price}
-                    desiredProfitMargin={settings.desired_profit_margin}
-                    packagingCost={settings.packaging_cost}
-                    onUpdateSettings={updateSettings}
-                  />
-                </div>
-              )}
-            </div>
-            <div>
-              {activeView === 'filaments' && (
-                <>
-                  <PrintQueue
-                    items={queueItems}
-                    printers={printers}
-                    onAdd={handleAddQueueItem}
-                    onUpdate={handleUpdateQueueItem}
-                    onDelete={handleDeleteQueueItem}
-                    onReorder={handleReorderQueueItems}
-                  />
-                  <div className="mt-4">
-                    <PurchaseList
-                      items={purchaseItems}
-                      filaments={filaments}
-                      onAdd={handleAddPurchaseItem}
-                      onUpdate={handleUpdatePurchaseItem}
-                      onDelete={handleDeletePurchaseItem}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+          {/* Render the active view */}
+          {renderActiveView()}
         </div>
       </div>
     </div>
