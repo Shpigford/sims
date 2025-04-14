@@ -1,31 +1,36 @@
 version: '3.8'
 
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      platforms:
-        - "linux/amd64"
-        - "linux/arm64"
-    image: joshpigford/sims:latest
-    pull_policy: always
-    volumes:
-      - db-data:/app/db
+  sims:
+    container_name: sims
+    build: .
+    image: sims-custom
     ports:
       - "5173:5173"
       - "8175:8175"
-    environment:
-      - VITE_API_URL=http://homeserver.local:8175
+    volumes:
+      - sims-db-data:/app/db
     restart: unless-stopped
+
+  backup:
+    image: offen/docker-volume-backup:v2
+    environment:
+      BACKUP_CRON_EXPRESSION: "0 4 * * *"
+      BACKUP_RETENTION_DAYS: "7"
+      BACKUP_FILENAME: "sims-backup-%Y-%m-%d"
+    volumes:
+      - sims-db-data:/backup/sims-db:ro
+      - ./backups:/archive
+    depends_on:
+      - sims
 
   watchtower:
     image: containrrr/watchtower
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 30
+    command: --interval 86400
     restart: unless-stopped
 
 volumes:
-  db-data:
-    name: sims-db-data 
+  sims-db-data:
+

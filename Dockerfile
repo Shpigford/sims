@@ -2,6 +2,7 @@
 FROM node:20-slim AS frontend-builder
 
 WORKDIR /app/frontend
+COPY .env.production .env
 
 # Copy frontend files
 COPY frontend/package*.json ./
@@ -45,6 +46,7 @@ RUN mkdir -p dist/database && \
 FROM node:20-slim
 
 WORKDIR /app
+
 
 # Install nginx
 RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
