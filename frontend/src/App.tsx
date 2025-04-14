@@ -644,7 +644,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Conditionally render the nav based on the path */}
       {location.pathname !== '/print/filaments' && (
         <nav className="bg-black p-4">
           <div className="flex flex-col space-y-0 sm:space-y-4">
@@ -688,16 +687,12 @@ function App() {
               </div>
               <div className="w-1/4 flex justify-end">
                 <div className="flex space-x-2">
-                  {activeView !== 'printers' && (
+                  {activeView === 'filaments' && (
                     <button
-                      onClick={() => {
-                        if (activeView === 'parts') setIsAddingPart(true)
-                        else if (activeView === 'filaments') setIsAddingFilament(true)
-                        else if (activeView === 'products') setIsAddingProduct(true)
-                      }}
+                      onClick={() => setIsAddingFilament(true)}
                       className="w-full sm:w-auto px-4 py-2 border border-black rounded-none text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-1 focus:ring-black transition-colors uppercase tracking-wider"
                     >
-                      NEW {activeView === 'parts' ? 'PART' : activeView === 'products' ? 'PRODUCT' : 'RECORD'}
+                      NEW FILAMENT
                     </button>
                   )}
                 </div>
@@ -712,50 +707,39 @@ function App() {
 
         <Routes>
           <Route path="/filaments" element={
-            <>
-              <div className="flex justify-between items-center mb-4">
-                <h1 className="text-xl font-bold">Filaments</h1>
-                <button
-                  onClick={() => setIsAddingFilament(true)}
-                  className="px-4 py-1 border border-black text-xs font-bold text-white bg-black hover:bg-gray-800 transition-colors uppercase tracking-wider"
-                >
-                  ADD FILAMENT
-                </button>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-4">
+                {isLoading ? <p>Loading filaments...</p> : 
+                  <FilamentList
+                    filaments={filaments}
+                    onUpdate={handleUpdateFilament}
+                    onDelete={handleDeleteFilament}
+                  />
+                }
               </div>
-              {isAddingFilament && (
-                <FilamentForm
-                  isOpen={isAddingFilament}
-                  onSubmit={handleAddFilament}
-                  onClose={() => setIsAddingFilament(false)}
-                />
-              )}
-              {isLoading ? <p>Loading filaments...</p> : 
-                <FilamentList
-                  filaments={filaments}
-                  onUpdate={handleUpdateFilament}
-                  onDelete={handleDeleteFilament}
-                />
-              }
-              {!isLoading && (
-                <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <PrintQueue 
-                    items={queueItems} 
-                    printers={printers} 
-                    onAdd={handleAddQueueItem}
-                    onUpdate={handleUpdateQueueItem}
-                    onDelete={handleDeleteQueueItem}
-                    onReorder={handleReorderQueueItems}
-                  />
-                  <PurchaseList 
-                    items={purchaseItems} 
-                    filaments={filaments} 
-                    onAdd={handleAddPurchaseItem} 
-                    onUpdate={handleUpdatePurchaseItem} 
-                    onDelete={handleDeletePurchaseItem} 
-                  />
-                </div>
-              )}
-            </>
+
+              <div className="lg:col-span-1 space-y-8">
+                {!isLoading && (
+                  <>
+                    <PrintQueue 
+                      items={queueItems} 
+                      printers={printers} 
+                      onAdd={handleAddQueueItem}
+                      onUpdate={handleUpdateQueueItem}
+                      onDelete={handleDeleteQueueItem}
+                      onReorder={handleReorderQueueItems}
+                    />
+                    <PurchaseList 
+                      items={purchaseItems} 
+                      filaments={filaments} 
+                      onAdd={handleAddPurchaseItem} 
+                      onUpdate={handleUpdatePurchaseItem} 
+                      onDelete={handleDeletePurchaseItem} 
+                    />
+                  </>
+                )}
+              </div>
+            </div>
           } />
           <Route path="/parts" element={
             <>
@@ -850,6 +834,49 @@ function App() {
           <Route path="/print/filaments" element={<PrintFilamentList />} />
           <Route path="*" element={<Navigate to="/filaments" replace />} />
         </Routes>
+        {isAddingFilament && (
+          <FilamentForm
+            isOpen={isAddingFilament}
+            onSubmit={handleAddFilament}
+            onClose={() => setIsAddingFilament(false)}
+          />
+        )}
+        {isAddingPart && (
+          <PartForm
+            isOpen={isAddingPart}
+            onSubmit={handleAddPart}
+            onClose={() => setIsAddingPart(false)}
+            printers={printers.filter(p => p.id !== undefined) as { id: number; name: string }[]}
+          />
+        )}
+        {isAddingProduct && (
+          <ProductForm
+            product={null}
+            isOpen={isAddingProduct}
+            onSubmit={handleAddProduct}
+            onClose={() => setIsAddingProduct(false)}
+            hourlyRate={settings.hourly_rate}
+            wearTearPercentage={settings.wear_tear_markup}
+            platformFees={settings.platform_fees}
+            filamentSpoolPrice={settings.filament_spool_price}
+            desiredProfitMargin={settings.desired_profit_margin}
+            packagingCost={settings.packaging_cost}
+          />
+        )}
+        {editingProduct && (
+          <ProductForm
+            product={editingProduct}
+            isOpen={!!editingProduct}
+            onSubmit={handleUpdateProduct}
+            onClose={() => setEditingProduct(null)}
+            hourlyRate={settings.hourly_rate}
+            wearTearPercentage={settings.wear_tear_markup}
+            platformFees={settings.platform_fees}
+            filamentSpoolPrice={settings.filament_spool_price}
+            desiredProfitMargin={settings.desired_profit_margin}
+            packagingCost={settings.packaging_cost}
+          />
+        )}
       </div>
     </div>
   )
