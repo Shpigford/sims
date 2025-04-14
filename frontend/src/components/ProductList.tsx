@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Product, ProductWithCalculations } from '../types/product';
+import { Filament } from '../types/filament';
 import { API_URL } from '../config';
 import ProductForm from './ProductForm';
+import { Link } from 'react-router-dom';
 
 interface ProductListProps {
   products: ProductWithCalculations[];
@@ -56,6 +58,19 @@ const ProductList = ({
     desired_profit_margin: desiredProfitMargin,
     packaging_cost: packagingCost
   });
+
+  // Extract unique filaments logic
+  const uniqueFilamentsMap = new Map<number, Filament>();
+  products.forEach(product => {
+    if (product.filaments && product.filaments.length > 0) {
+      product.filaments.forEach(filament => {
+        if (filament.id && !uniqueFilamentsMap.has(filament.id)) {
+          uniqueFilamentsMap.set(filament.id, filament);
+        }
+      });
+    }
+  });
+  const uniqueFilamentsArray = Array.from(uniqueFilamentsMap.values());
 
   // Update local settings when props change
   useEffect(() => {
@@ -383,44 +398,32 @@ const ProductList = ({
           
           {/* Unique Filaments Used */}
           <div className="bg-white border-2 border-black p-4">
-            <div className="text-xs uppercase tracking-wider font-bold mb-1">Unique Filaments</div>
+            <div className="flex justify-between items-center mb-1">
+              <div className="text-xs uppercase tracking-wider font-bold">Unique Filaments</div>
+              {uniqueFilamentsArray.length > 0 && (
+                <Link
+                  to="/print/filaments"
+                  state={{ filaments: uniqueFilamentsArray }}
+                  className="text-xs text-blue-600 hover:underline"
+                  rel="noopener noreferrer"
+                >
+                  Print List
+                </Link>
+              )}
+            </div>
             <div className="flex items-center">
               <div className="text-2xl font-bold mr-2">
-                {(() => {
-                  const uniqueFilaments = new Map();
-                  products.forEach(product => {
-                    if (product.filaments && product.filaments.length > 0) {
-                      product.filaments.forEach(filament => {
-                        if (filament.id && !uniqueFilaments.has(filament.id)) {
-                          uniqueFilaments.set(filament.id, filament);
-                        }
-                      });
-                    }
-                  });
-                  return uniqueFilaments.size;
-                })()}
+                {uniqueFilamentsArray.length}
               </div>
               <div className="flex flex-wrap gap-0.5 items-center">
-                {(() => {
-                  const uniqueFilaments = new Map();
-                  products.forEach(product => {
-                    if (product.filaments && product.filaments.length > 0) {
-                      product.filaments.forEach(filament => {
-                        if (filament.id && !uniqueFilaments.has(filament.id)) {
-                          uniqueFilaments.set(filament.id, filament);
-                        }
-                      });
-                    }
-                  });
-                  return Array.from(uniqueFilaments.values()).map(filament => (
-                    <div 
-                      key={filament.id} 
+                {uniqueFilamentsArray.map(filament => (
+                    <div
+                      key={filament.id}
                       className="h-2.5 w-2.5 border border-black cursor-help"
                       style={{ backgroundColor: filament.color }}
                       title={`${filament.name} - ${filament.material} - ${filament.color}${filament.manufacturer ? ` - ${filament.manufacturer}` : ''}`}
                     />
-                  ));
-                })()}
+                  ))}
               </div>
             </div>
             <div className="text-xs text-gray-500 mt-1">Distinct filaments used</div>

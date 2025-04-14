@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Link, useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom'
 import FilamentList from './components/FilamentList'
 import FilamentForm from './components/FilamentForm'
 import PrintQueue from './components/PrintQueue'
@@ -8,6 +8,7 @@ import PartList from './components/PartList'
 import PrinterList from './components/PrinterList'
 import ProductList from './components/ProductList'
 import ProductForm from './components/ProductForm'
+import PrintFilamentList from './components/PrintFilamentList'
 import { Filament } from './types/filament'
 import { PrintQueueItem, Printer } from './types/printer'
 import { PurchaseListItem } from './types/purchase'
@@ -73,15 +74,17 @@ function App() {
   // Set active view based on URL path
   useEffect(() => {
     const path = location.pathname.slice(1) || 'filaments'
-    if (['filaments', 'parts', 'printers', 'products'].includes(path)) {
+    const validViews = ['filaments', 'parts', 'printers', 'products']
+    
+    if (validViews.includes(path)) {
       setActiveView(path as 'filaments' | 'parts' | 'printers' | 'products')
       
       // Refetch data when route changes to ensure content updates
-      if (path === 'filaments') fetchFilaments();
-      if (path === 'parts') fetchParts();
-      if (path === 'printers') fetchPrinters();
-      if (path === 'products') fetchProducts();
-    } else {
+      if (path === 'filaments') fetchFilaments()
+      if (path === 'parts') fetchParts()
+      if (path === 'printers') fetchPrinters()
+      if (path === 'products') fetchProducts()
+    } else if (path !== 'print/filaments') {
       navigate('/filaments')
     }
   }, [location.pathname, navigate])
@@ -640,186 +643,213 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-white sm:p-8 font-mono">
-      <div className="w-full">
-        <div className="flex flex-col space-y-0 sm:space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-black border-2 border-black p-4 space-y-4 sm:space-y-0">
-            <div className="w-1/4">
-              <div className="flex flex-col sm:flex-row sm:items-baseline space-y-2 sm:space-y-0 sm:space-x-4">
-                <h1 className="text-2xl font-medium tracking-wider text-white">SIMS TERMINAL v1.0</h1>
+    <div className="min-h-screen bg-gray-100">
+      {/* Conditionally render the nav based on the path */}
+      {location.pathname !== '/print/filaments' && (
+        <nav className="bg-black p-4">
+          <div className="flex flex-col space-y-0 sm:space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-black border-2 border-black p-4 space-y-4 sm:space-y-0">
+              <div className="w-1/4">
+                <div className="flex flex-col sm:flex-row sm:items-baseline space-y-2 sm:space-y-0 sm:space-x-4">
+                  <h1 className="text-2xl font-medium tracking-wider text-white">SIMS TERMINAL v1.0</h1>
+                </div>
               </div>
-            </div>
-            <div className="flex justify-center w-1/2">
-              <div className="flex space-x-2">
-                <Link
-                  to="/filaments"
-                  onClick={() => setActiveView('filaments')}
-                  className={`w-auto px-4 py-2 border border-black rounded-none text-xs font-bold text-white ${activeView === 'filaments' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} focus:outline-none focus:ring-1 focus:ring-black transition-colors uppercase tracking-wider`}
-                >
-                  FILAMENTS
-                </Link>
-                <Link
-                  to="/parts"
-                  onClick={() => setActiveView('parts')}
-                  className={`w-auto px-4 py-2 border border-black rounded-none text-xs font-bold text-white ${activeView === 'parts' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} focus:outline-none focus:ring-1 focus:ring-black transition-colors uppercase tracking-wider`}
-                >
-                  PARTS
-                </Link>
-                <Link
-                  to="/printers"
-                  onClick={() => setActiveView('printers')}
-                  className={`w-auto px-4 py-2 border border-black rounded-none text-xs font-bold text-white ${activeView === 'printers' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} focus:outline-none focus:ring-1 focus:ring-black transition-colors uppercase tracking-wider`}
-                >
-                  PRINTERS
-                </Link>
-                <Link
-                  to="/products"
-                  onClick={() => setActiveView('products')}
-                  className={`w-auto px-4 py-2 border border-black rounded-none text-xs font-bold text-white ${activeView === 'products' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} focus:outline-none focus:ring-1 focus:ring-black transition-colors uppercase tracking-wider`}
-                >
-                  PRODUCTS
-                </Link>
-              </div>
-            </div>
-            <div className="w-1/4 flex justify-end">
-              <div className="flex space-x-2">
-                {activeView !== 'printers' && (
-                  <button
-                    onClick={() => {
-                      if (activeView === 'parts') setIsAddingPart(true)
-                      else if (activeView === 'filaments') setIsAddingFilament(true)
-                      else if (activeView === 'products') setIsAddingProduct(true)
-                    }}
-                    className="w-full sm:w-auto px-4 py-2 border border-black rounded-none text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-1 focus:ring-black transition-colors uppercase tracking-wider"
+              <div className="flex justify-center w-1/2">
+                <div className="flex space-x-2">
+                  <Link
+                    to="/filaments"
+                    onClick={() => setActiveView('filaments')}
+                    className={`w-auto px-4 py-2 border border-black rounded-none text-xs font-bold text-white ${activeView === 'filaments' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} focus:outline-none focus:ring-1 focus:ring-black transition-colors uppercase tracking-wider`}
                   >
-                    NEW {activeView === 'parts' ? 'PART' : activeView === 'products' ? 'PRODUCT' : 'RECORD'}
-                  </button>
-                )}
+                    FILAMENTS
+                  </Link>
+                  <Link
+                    to="/parts"
+                    onClick={() => setActiveView('parts')}
+                    className={`w-auto px-4 py-2 border border-black rounded-none text-xs font-bold text-white ${activeView === 'parts' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} focus:outline-none focus:ring-1 focus:ring-black transition-colors uppercase tracking-wider`}
+                  >
+                    PARTS
+                  </Link>
+                  <Link
+                    to="/printers"
+                    onClick={() => setActiveView('printers')}
+                    className={`w-auto px-4 py-2 border border-black rounded-none text-xs font-bold text-white ${activeView === 'printers' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} focus:outline-none focus:ring-1 focus:ring-black transition-colors uppercase tracking-wider`}
+                  >
+                    PRINTERS
+                  </Link>
+                  <Link
+                    to="/products"
+                    onClick={() => setActiveView('products')}
+                    className={`w-auto px-4 py-2 border border-black rounded-none text-xs font-bold text-white ${activeView === 'products' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} focus:outline-none focus:ring-1 focus:ring-black transition-colors uppercase tracking-wider`}
+                  >
+                    PRODUCTS
+                  </Link>
+                </div>
+              </div>
+              <div className="w-1/4 flex justify-end">
+                <div className="flex space-x-2">
+                  {activeView !== 'printers' && (
+                    <button
+                      onClick={() => {
+                        if (activeView === 'parts') setIsAddingPart(true)
+                        else if (activeView === 'filaments') setIsAddingFilament(true)
+                        else if (activeView === 'products') setIsAddingProduct(true)
+                      }}
+                      className="w-full sm:w-auto px-4 py-2 border border-black rounded-none text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-1 focus:ring-black transition-colors uppercase tracking-wider"
+                    >
+                      NEW {activeView === 'parts' ? 'PART' : activeView === 'products' ? 'PRODUCT' : 'RECORD'}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
+        </nav>
+      )}
 
-          {error && (
-            <div className="p-4 border-2 border-black bg-white text-black">
-              <div className="text-xs font-medium uppercase tracking-wider mb-1">SIMS ERROR</div>
-              <div className="text-sm">{error}</div>
-            </div>
-          )}
+      <div className="p-4">
+        {error && <div className="bg-red-500 text-white p-2 mb-4">Error: {error}</div>}
 
-          {isAddingFilament && activeView === 'filaments' && (
-            <FilamentForm
-              isOpen={isAddingFilament}
-              onSubmit={handleAddFilament}
-              onClose={() => setIsAddingFilament(false)}
-            />
-          )}
-
-          {isAddingPart && activeView === 'parts' && (
-            <PartForm
-              isOpen={isAddingPart}
-              printers={printers.filter(p => p.id !== undefined) as { id: number; name: string }[]}
-              onSubmit={handleAddPart}
-              onClose={() => setIsAddingPart(false)}
-            />
-          )}
-
-          {isAddingProduct && activeView === 'products' && (
-            <ProductForm
-              product={null}
-              isOpen={isAddingProduct}
-              onSubmit={handleAddProduct}
-              onClose={() => setIsAddingProduct(false)}
-              hourlyRate={settings.hourly_rate}
-              wearTearPercentage={settings.wear_tear_markup}
-              platformFees={settings.platform_fees}
-              filamentSpoolPrice={settings.filament_spool_price}
-              desiredProfitMargin={settings.desired_profit_margin}
-              packagingCost={settings.packaging_cost}
-            />
-          )}
-
-          {editingProduct && (
-            <ProductForm
-              product={editingProduct}
-              isOpen={!!editingProduct}
-              onSubmit={handleUpdateProduct}
-              onClose={() => setEditingProduct(null)}
-              hourlyRate={settings.hourly_rate}
-              wearTearPercentage={settings.wear_tear_markup}
-              platformFees={settings.platform_fees}
-              filamentSpoolPrice={settings.filament_spool_price}
-              desiredProfitMargin={settings.desired_profit_margin}
-              packagingCost={settings.packaging_cost}
-            />
-          )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-            <div className={`${activeView === 'products' ? 'lg:col-span-4' : 'lg:col-span-3'}`}>
-              {activeView === 'parts' && (
+        <Routes>
+          <Route path="/filaments" element={
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <h1 className="text-xl font-bold">Filaments</h1>
+                <button
+                  onClick={() => setIsAddingFilament(true)}
+                  className="px-4 py-1 border border-black text-xs font-bold text-white bg-black hover:bg-gray-800 transition-colors uppercase tracking-wider"
+                >
+                  ADD FILAMENT
+                </button>
+              </div>
+              {isAddingFilament && (
+                <FilamentForm
+                  isOpen={isAddingFilament}
+                  onSubmit={handleAddFilament}
+                  onClose={() => setIsAddingFilament(false)}
+                />
+              )}
+              {isLoading ? <p>Loading filaments...</p> : 
+                <FilamentList
+                  filaments={filaments}
+                  onUpdate={handleUpdateFilament}
+                  onDelete={handleDeleteFilament}
+                />
+              }
+              {!isLoading && (
+                <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <PrintQueue 
+                    items={queueItems} 
+                    printers={printers} 
+                    onAdd={handleAddQueueItem}
+                    onUpdate={handleUpdateQueueItem}
+                    onDelete={handleDeleteQueueItem}
+                    onReorder={handleReorderQueueItems}
+                  />
+                  <PurchaseList 
+                    items={purchaseItems} 
+                    filaments={filaments} 
+                    onAdd={handleAddPurchaseItem} 
+                    onUpdate={handleUpdatePurchaseItem} 
+                    onDelete={handleDeletePurchaseItem} 
+                  />
+                </div>
+              )}
+            </>
+          } />
+          <Route path="/parts" element={
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <h1 className="text-xl font-bold">Parts</h1>
+                <button 
+                  onClick={() => setIsAddingPart(true)}
+                  className="px-4 py-1 border border-black text-xs font-bold text-white bg-black hover:bg-gray-800 transition-colors uppercase tracking-wider"
+                >
+                  ADD PART
+                </button>
+              </div>
+              {isAddingPart && (
+                <PartForm
+                  isOpen={isAddingPart}
+                  onSubmit={handleAddPart}
+                  onClose={() => setIsAddingPart(false)}
+                  printers={printers.filter(p => p.id !== undefined) as { id: number; name: string }[]}
+                />
+              )}
+              {isLoading ? <p>Loading parts...</p> : 
                 <PartList
                   parts={parts}
                   printers={printers.filter(p => p.id !== undefined) as { id: number; name: string }[]}
                   onUpdatePart={handleUpdatePart}
                   onDeletePart={handleDeletePart}
                 />
-              )}
-              {activeView === 'filaments' && (
-                <FilamentList
-                  filaments={filaments}
-                  onUpdate={handleUpdateFilament}
-                  onDelete={handleDeleteFilament}
-                />
-              )}
-              {activeView === 'printers' && (
-                <PrinterList
-                  printers={printers}
+              }
+            </>
+          } />
+          <Route path="/printers" element={
+             <>
+              <h1 className="text-xl font-bold mb-4">Printers</h1>
+              {isLoading ? <p>Loading printers...</p> :
+                <PrinterList 
+                  printers={printers} 
                   onUpdate={handleUpdatePrinter}
                   onDelete={handleDeletePrinter}
                   onAdd={handleAddPrinter}
                 />
+              }
+            </>
+          } />
+          <Route path="/products" element={
+            <>
+              <div className="flex justify-between items-center mb-4">
+                <h1 className="text-xl font-bold">Products</h1>
+                <button
+                  onClick={() => setIsAddingProduct(true)}
+                  className="px-4 py-1 border border-black text-xs font-bold text-white bg-black hover:bg-gray-800 transition-colors uppercase tracking-wider"
+                >
+                  ADD PRODUCT
+                </button>
+              </div>
+              {isAddingProduct && (
+                <ProductForm
+                  product={null}
+                  isOpen={isAddingProduct}
+                  onSubmit={handleAddProduct}
+                  onClose={() => setIsAddingProduct(false)}
+                  hourlyRate={settings.hourly_rate}
+                  wearTearPercentage={settings.wear_tear_markup}
+                  platformFees={settings.platform_fees}
+                  filamentSpoolPrice={settings.filament_spool_price}
+                  desiredProfitMargin={settings.desired_profit_margin}
+                  packagingCost={settings.packaging_cost}
+                />
               )}
-              {activeView === 'products' && (
-                <div className="flex flex-col space-y-4">
-                  <ProductList
-                    products={products}
-                    onUpdate={handleUpdateProduct}
-                    onDelete={handleDeleteProduct}
-                    hourlyRate={settings.hourly_rate}
-                    wearTearPercentage={settings.wear_tear_markup}
-                    platformFees={settings.platform_fees}
-                    filamentSpoolPrice={settings.filament_spool_price}
-                    desiredProfitMargin={settings.desired_profit_margin}
-                    packagingCost={settings.packaging_cost}
-                    onUpdateSettings={updateSettings}
-                  />
-                </div>
-              )}
-            </div>
-            <div>
-              {activeView === 'filaments' && (
-                <>
-                  <PrintQueue
-                    items={queueItems}
-                    printers={printers}
-                    onAdd={handleAddQueueItem}
-                    onUpdate={handleUpdateQueueItem}
-                    onDelete={handleDeleteQueueItem}
-                    onReorder={handleReorderQueueItems}
-                  />
-                  <div className="mt-4">
-                    <PurchaseList
-                      items={purchaseItems}
-                      filaments={filaments}
-                      onAdd={handleAddPurchaseItem}
-                      onUpdate={handleUpdatePurchaseItem}
-                      onDelete={handleDeletePurchaseItem}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+              {isLoading ? <p>Loading products...</p> : 
+                <ProductList
+                  products={products}
+                  onUpdate={(product: Product) => {
+                    const productToEdit = products.find(p => p.id === product.id);
+                    if (productToEdit) {
+                      setEditingProduct(productToEdit);
+                    } else {
+                      handleUpdateProduct(product);
+                    }
+                  }}
+                  onDelete={handleDeleteProduct}
+                  hourlyRate={settings.hourly_rate}
+                  wearTearPercentage={settings.wear_tear_markup}
+                  platformFees={settings.platform_fees}
+                  filamentSpoolPrice={settings.filament_spool_price}
+                  desiredProfitMargin={settings.desired_profit_margin}
+                  packagingCost={settings.packaging_cost}
+                  onUpdateSettings={updateSettings}
+                />
+              }
+            </>
+          } />
+          <Route path="/print/filaments" element={<PrintFilamentList />} />
+          <Route path="*" element={<Navigate to="/filaments" replace />} />
+        </Routes>
       </div>
     </div>
   )
